@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f1a">
+<title>Ecos de Vidrio</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0f1a; color: #eef; font-family: "Trebuchet MS", system-ui, sans-serif; touch-action: none; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  .oculto { display: none !important; }
+  .panel { background: linear-gradient(180deg, rgba(28,34,78,.94), rgba(10,12,34,.94)); border: 2px solid #c9d4ff; border-radius: 10px; box-shadow: 0 0 0 2px #1a1e44 inset, 0 6px 18px rgba(0,0,0,.5); }
+  button { font-family: inherit; }
+  .btn { padding: 9px 14px; border-radius: 8px; border: 1.5px solid #9fb0ff; background: rgba(40,48,110,.85); color: #fff; font-weight: 700; font-size: 14px; }
+  .btn:active { background: rgba(80,96,200,.95); }
+  .btn.sec { background: rgba(255,255,255,.08); }
+
+  /* Título */
+  #titulo { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(13,15,26,.2), rgba(13,15,26,.85)); }
+  #titulo h1 { margin: 0; font-size: clamp(34px, 8vw, 64px); letter-spacing: 6px; color: #fff; text-shadow: 0 0 18px #7fd8ff, 0 0 4px #fff; font-weight: 900; }
+  #titulo h2 { margin: 4px 0 22px; font-weight: 400; letter-spacing: 3px; font-size: 14px; color: #bfe8ff; }
+  #titulo .btn { min-width: 220px; margin: 5px; font-size: 16px; padding: 12px; }
+  #titulo small { position: absolute; bottom: 10px; opacity: .5; font-size: 11px; }
+
+  /* Campo */
+  #hud { position: fixed; top: calc(8px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); max-width: 46vw; pointer-events: none; }
+  #zona { font-weight: 800; font-size: 13px; letter-spacing: 1px; color: #ffd54a; text-shadow: 0 1px 3px #000; }
+  #objetivo { font-size: 12px; text-shadow: 0 1px 3px #000; opacity: .9; margin-top: 2px; }
+  #hudGrupo { position: fixed; top: calc(8px + env(safe-area-inset-top)); right: calc(92px + env(safe-area-inset-right)); display: flex; gap: 6px; pointer-events: none; }
+  .mini { background: rgba(10,12,34,.7); border: 1px solid #6a78c0; border-radius: 6px; padding: 3px 6px; font-size: 11px; min-width: 74px; }
+  .mini b { display: block; font-size: 11px; }
+  .barra { height: 4px; background: #333; border-radius: 2px; overflow: hidden; margin-top: 2px; }
+  .barra i { display: block; height: 100%; background: linear-gradient(90deg,#5aff8a,#c8ff5a); }
+  #bMenu { position: fixed; top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
+  #bHablar { position: fixed; right: calc(30px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); width: 84px; height: 84px; border-radius: 50%; font-size: 15px; }
+  #joyBase { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(255,255,255,.1); border: 2px solid rgba(200,220,255,.4); pointer-events: none; display: none; }
+  #joyPunta { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(200,220,255,.5); }
+  #aviso { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); padding: 8px 16px; font-size: 14px; text-align: center; pointer-events: none; opacity: 0; transition: opacity .4s; max-width: 80vw; }
+
+  /* Diálogo */
+  #dialogo { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom)); width: min(760px, 94vw); min-height: 110px; display: flex; gap: 12px; padding: 10px 14px; align-items: flex-start; }
+  #dRetrato svg { display: block; border-radius: 10px; border: 2px solid #c9d4ff; }
+  #dTexto { flex: 1; }
+  #dNombre { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  #dLinea { font-size: 15px; line-height: 1.45; }
+  #dSig { position: absolute; right: 12px; bottom: 6px; font-size: 12px; animation: parpadeo 1s infinite; }
+  @keyframes parpadeo { 50% { opacity: .2; } }
+
+  /* Combate */
+  #bPanel { position: fixed; left: 0; right: 0; bottom: 0; padding: 6px calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left)); display: grid; grid-template-columns: 0.9fr 1.5fr; gap: 8px; }
+  #bEnem, #bGrupo { padding: 6px 10px; min-height: 96px; }
+  .eNom { font-size: 14px; padding: 3px 0; }
+  .eNom.muerto { opacity: .3; text-decoration: line-through; }
+  .gFila { display: grid; grid-template-columns: 1.1fr 1.2fr 1fr; align-items: center; gap: 8px; font-size: 14px; padding: 3px 4px; border-radius: 5px; }
+  .gFila.activo { background: rgba(255,213,74,.18); }
+  .gFila.ko { opacity: .45; }
+  .gFila .hp { text-align: right; font-variant-numeric: tabular-nums; }
+  .gFila .hp.bajo { color: #ffd54a; }
+  .atb { height: 8px; background: #22264a; border: 1px solid #5a68b0; border-radius: 4px; overflow: hidden; }
+  .atb i { display: block; height: 100%; background: linear-gradient(90deg,#4a8aff,#7fd8ff); }
+  .atb.lleno i { background: linear-gradient(90deg,#ffd54a,#fff2a0); }
+  #bCmd { position: fixed; right: calc(10px + env(safe-area-inset-right)); bottom: calc(118px + env(safe-area-inset-bottom)); width: 200px; padding: 6px; max-height: calc(100vh - 140px); overflow-y: auto; }
+  #bCmd h3 { margin: 2px 6px 6px; font-size: 13px; color: #ffd54a; }
+  .op { display: flex; justify-content: space-between; width: 100%; text-align: left; padding: 8px 10px; margin: 2px 0; border: 0; border-radius: 6px; background: transparent; color: #fff; font-size: 15px; font-weight: 600; }
+  .op:active, .op.foco { background: rgba(127,216,255,.25); }
+  .op.arte { color: #ffd54a; text-shadow: 0 0 6px #ff8a3d; }
+  .op[disabled] { opacity: .35; }
+  .op small { opacity: .75; font-weight: 400; }
+  #bBanner { position: fixed; top: calc(14px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 6px 22px; font-weight: 800; font-size: 16px; letter-spacing: 1px; pointer-events: none; }
+  .num { position: fixed; font-weight: 900; font-size: 26px; color: #fff; text-shadow: 0 2px 0 #000, 0 0 6px #000; pointer-events: none; transform: translate(-50%, -50%); transition: transform .9s ease-out, opacity .9s; }
+  .num.cura { color: #7dffb0; } .num.debil { color: #ffd54a; font-size: 32px; } .num.info { font-size: 17px; color: #bfe8ff; }
+  #invoca { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; background: radial-gradient(ellipse, rgba(0,0,0,0) 30%, rgba(0,0,0,.6)); }
+  #invoca h2 { margin: 0; font-size: 44px; letter-spacing: 8px; text-shadow: 0 0 20px currentColor; }
+  #invoca p { margin: 4px; font-size: 16px; letter-spacing: 3px; }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #resultado { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); width: min(440px, 90vw); padding: 16px 20px; text-align: center; }
+  #resultado h2 { margin: 0 0 8px; color: #ffd54a; letter-spacing: 3px; }
+  #resultado p { margin: 4px 0; }
+
+  /* Menú */
+  #menu { position: fixed; inset: calc(8px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left)); display: flex; flex-direction: column; padding: 10px; }
+  #mTabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #mTabs .btn.activo { background: #ffd54a; color: #1a1a2a; border-color: #ffd54a; }
+  #mCerrar { margin-left: auto; }
+  #mCuerpo { flex: 1; overflow-y: auto; margin-top: 10px; padding-right: 4px; }
+  .tarjeta { display: flex; gap: 12px; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(200,210,255,.25); border-radius: 8px; align-items: flex-start; }
+  .tarjeta h3 { margin: 0 0 4px; font-size: 16px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 2px 14px; font-size: 13px; margin-top: 4px; }
+  .mas { color: #7dffb0; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .chip { padding: 6px 10px; border-radius: 14px; border: 1px solid #7f8fd0; background: rgba(255,255,255,.06); color: #fff; font-size: 13px; }
+  .chip.sel { background: #ffd54a; color: #222; border-color: #ffd54a; font-weight: 700; }
+  .vfila { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; margin: 4px 0; border-radius: 6px; background: rgba(255,255,255,.05); font-size: 14px; }
+  .vfila.bloq { opacity: .4; }
+  .nota { font-size: 12px; opacity: .75; margin: 4px 0 8px; }
+
+  #fin { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5,5,15,.85); text-align: center; padding: 20px; }
+  #fin h1 { letter-spacing: 6px; text-shadow: 0 0 16px #7fd8ff; }
+</style>
+</head>
+<body>
+  <canvas id="lienzo"></canvas>
+
+  <div id="hud" class="oculto"><div id="zona"></div><div id="objetivo"></div></div>
+  <div id="hudGrupo" class="oculto"></div>
+  <button id="bMenu" class="btn oculto">Menú</button>
+  <button id="bHablar" class="btn oculto">Hablar</button>
+  <div id="joyBase"><div id="joyPunta"></div></div>
+  <div id="aviso" class="panel"></div>
+
+  <div id="dialogo" class="panel oculto">
+    <div id="dRetrato"></div>
+    <div id="dTexto"><div id="dNombre"></div><div id="dLinea"></div></div>
+    <div id="dSig">▼</div>
+  </div>
+
+  <div id="bPanel" class="oculto">
+    <div id="bEnem" class="panel"></div>
+    <div id="bGrupo" class="panel"></div>
+  </div>
+  <div id="bCmd" class="panel oculto"></div>
+  <div id="bBanner" class="panel oculto"></div>
+  <div id="invoca" class="oculto"><h2 id="iNom"></h2><p id="iAt"></p></div>
+  <div id="flash"></div>
+  <div id="resultado" class="panel oculto"></div>
+
+  <div id="menu" class="panel oculto">
+    <div id="mTabs">
+      <button class="btn" data-tab="grupo">Grupo</button>
+      <button class="btn" data-tab="vinculos">Vínculos</button>
+      <button class="btn" data-tab="ecos">Ecos</button>
+      <button class="btn" data-tab="objetos">Objetos</button>
+      <button class="btn sec" id="mCerrar">Cerrar ✕</button>
+    </div>
+    <div id="mCuerpo"></div>
+  </div>
+
+  <div id="titulo">
+    <h1>ECOS DE VIDRIO</h1>
+    <h2>UN RPG DE VÍNCULOS Y MEMORIA</h2>
+    <button class="btn" id="tNueva">Nueva partida</button>
+    <button class="btn sec oculto" id="tSeguir">Continuar</button>
+    <small>RG · 2026</small>
+  </div>
+
+  <div id="fin" class="oculto">
+    <h1>ECOS DE VIDRIO</h1>
+    <p>Kael, Lyra y Doran devolvieron la memoria al mundo.</p>
+    <p style="opacity:.7">Historia y personajes originales · Hecho para RG</p>
+    <button class="btn" id="fSeguir">Seguir explorando</button>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
