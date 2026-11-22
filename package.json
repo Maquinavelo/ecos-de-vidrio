@@ -1,0 +1,14 @@
+{
+  "name": "ecos-de-vidrio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ecos de Vidrio - RPG 3D por turnos",
+  "scripts": {
+    "android": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  }
+}
